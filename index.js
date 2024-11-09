@@ -6,12 +6,22 @@ const fetch = require('node-fetch');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware to parse JSON bodies
 app.use(bodyParser.json());
 
+// Add this route handler for the root path
+app.get('/', (req, res) => {
+    res.send('Webhook server is running!');
+});
+
+// Webhook endpoint for Phantombuster
 app.post('/webhook', (req, res) => {
     const phantomData = req.body;
+    
+    // Log the incoming webhook data
     console.log('Received webhook from Phantombuster:', phantomData);
     
+    // Only check secret if it's configured in .env
     if (process.env.WEBHOOK_SECRET) {
         const secret = req.query.secret;
         if (secret !== process.env.WEBHOOK_SECRET) {
@@ -20,6 +30,7 @@ app.post('/webhook', (req, res) => {
         }
     }
 
+    // Handle different exit messages
     switch (phantomData.exitMessage) {
         case 'finished':
             console.log(`Agent ${phantomData.agentName} completed successfully`);
@@ -36,13 +47,16 @@ app.post('/webhook', (req, res) => {
             console.log(`Agent ${phantomData.agentName} ended with status: ${phantomData.exitMessage}`);
     }
 
+    // Forward to N8n webhook if needed
     if (process.env.N8N_WEBHOOK_URL) {
         callWebhook(phantomData);
     }
 
+    // Send response quickly (within timeout)
     res.status(200).send('Webhook received');
 });
 
+// Function to call the N8n webhook
 async function callWebhook(data) {
     try {
         const response = await fetch(process.env.N8N_WEBHOOK_URL, {
@@ -66,6 +80,7 @@ async function callWebhook(data) {
     }
 }
 
+// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

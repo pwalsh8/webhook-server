@@ -1,0 +1,31 @@
+name: Deploy Webhook
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Create .env file
+        run: |
+          echo "N8N_WEBHOOK_URL=${{ secrets.N8N_WEBHOOK_URL }}" >> .env
+          echo "N8N_AUTH_TOKEN=${{ secrets.N8N_AUTH_TOKEN }}" >> .env
+          echo "PORT=${{ secrets.PORT }}" >> .env
+          
+      - name: Start Application
+        run: npm start
